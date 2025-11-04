@@ -6,6 +6,8 @@ import productRoutes from "./routes/product.router";
 import adminRoutes from "./routes/admin.router";
 import uploadRoutes from "./routes/upload.router";
 import feedbackRoutes from "./routes/feedback.router";
+import orderRoutes from "./routes/order.router";
+import orderDetailRoutes from "./routes/order.detail.router";
 import uploadImgproductRouter from "./routes/upload.imgproduct.router";
 import { uploadAvatarRouter } from "./routes/upload.avatar.router";
 
@@ -85,6 +87,10 @@ app.use(
   },
   productRoutes
 );
+
+app.use("/api/orders", orderRoutes);
+
+app.use("/api/order-detail", orderDetailRoutes);
 
 app.use(
   "/api/admin",
