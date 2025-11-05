@@ -5,6 +5,7 @@ import authRoutes from "./routes/auth.routes";
 import productRoutes from "./routes/product.router";
 import adminRoutes from "./routes/admin.router";
 import uploadRoutes from "./routes/upload.router";
+import locationRouter from "./routes/address.router";
 import feedbackRoutes from "./routes/feedback.router";
 import orderRoutes from "./routes/order.router";
 import orderDetailRoutes from "./routes/order.detail.router";
@@ -87,6 +88,8 @@ app.use(
   },
   productRoutes
 );
+
+app.use("/api/location", locationRouter);
 
 app.use("/api/orders", orderRoutes);
 

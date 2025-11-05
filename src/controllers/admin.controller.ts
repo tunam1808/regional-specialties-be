@@ -18,7 +18,7 @@ export const getAllUsers = async (_req: Request, res: Response) => {
         kh.HoTen, 
         kh.SoDienThoai, 
         kh.TinhThanh, 
-        kh.QuanHuyen, 
+        
         kh.PhuongXa, 
         kh.DiaChiChiTiet, 
         kh.DiaChiDayDu
@@ -44,7 +44,7 @@ export const createUser = async (req: Request, res: Response) => {
       fullname,
       SoDienThoai,
       TinhThanh,
-      QuanHuyen,
+
       PhuongXa,
       DiaChiChiTiet,
       avatar,
@@ -76,21 +76,21 @@ export const createUser = async (req: Request, res: Response) => {
     const userId = userResult.insertId;
 
     // ✅ Ghép địa chỉ đầy đủ (từ tên, không từ mã)
-    const DiaChiDayDu = [DiaChiChiTiet, PhuongXa, QuanHuyen, TinhThanh]
+    const DiaChiDayDu = [DiaChiChiTiet, PhuongXa, TinhThanh]
       .filter(Boolean)
       .join(", ");
 
     // Tạo bản ghi KhachHang
     await db.execute<ResultSetHeader>(
       `INSERT INTO khachhang 
-   (MaKH, HoTen, SoDienThoai, TinhThanh, QuanHuyen, PhuongXa, DiaChiChiTiet, user_id)
+   (MaKH, HoTen, SoDienThoai, TinhThanh,  PhuongXa, DiaChiChiTiet, user_id)
    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         userId,
         safeFullname,
         SoDienThoai ?? null,
         TinhThanh ?? null,
-        QuanHuyen ?? null,
+
         PhuongXa ?? null,
         DiaChiChiTiet ?? null,
         userId,
@@ -102,7 +102,7 @@ export const createUser = async (req: Request, res: Response) => {
       `
       SELECT 
         u.id, u.fullname, u.username, u.email, u.avatar, u.role, u.created_at,
-        kh.HoTen, kh.SoDienThoai, kh.TinhThanh, kh.QuanHuyen, kh.PhuongXa, 
+        kh.HoTen, kh.SoDienThoai, kh.TinhThanh, kh.PhuongXa, 
         kh.DiaChiChiTiet, kh.DiaChiDayDu
       FROM users u
       LEFT JOIN khachhang kh ON u.id = kh.MaKH
@@ -130,7 +130,7 @@ export const updateUser = async (req: Request, res: Response) => {
       fullname,
       SoDienThoai,
       TinhThanh,
-      QuanHuyen,
+
       PhuongXa,
       DiaChiChiTiet,
       avatar,
@@ -141,7 +141,7 @@ export const updateUser = async (req: Request, res: Response) => {
       `
       SELECT 
         u.fullname, u.username, u.email, u.role, u.avatar,
-        kh.SoDienThoai, kh.TinhThanh, kh.QuanHuyen, kh.PhuongXa, 
+        kh.SoDienThoai, kh.TinhThanh, kh.PhuongXa, 
         kh.DiaChiChiTiet, kh.DiaChiDayDu
       FROM users u
       LEFT JOIN khachhang kh ON u.id = kh.MaKH
@@ -162,7 +162,7 @@ export const updateUser = async (req: Request, res: Response) => {
       avatar: avatar ?? oldUser.avatar,
       SoDienThoai: SoDienThoai ?? oldUser.SoDienThoai,
       TinhThanh: TinhThanh ?? oldUser.TinhThanh,
-      QuanHuyen: QuanHuyen ?? oldUser.QuanHuyen,
+
       PhuongXa: PhuongXa ?? oldUser.PhuongXa,
       DiaChiChiTiet: DiaChiChiTiet ?? oldUser.DiaChiChiTiet,
     };
@@ -171,7 +171,7 @@ export const updateUser = async (req: Request, res: Response) => {
     const DiaChiDayDu = [
       safeData.DiaChiChiTiet,
       safeData.PhuongXa,
-      safeData.QuanHuyen,
+
       safeData.TinhThanh,
     ]
       .filter(Boolean)
@@ -195,14 +195,14 @@ export const updateUser = async (req: Request, res: Response) => {
     // Cập nhật bảng KhachHang (🟢 lưu tên tỉnh/huyện/xã)
     await db.execute<ResultSetHeader>(
       `UPDATE khachhang 
-   SET HoTen = ?, SoDienThoai = ?, TinhThanh = ?, QuanHuyen = ?, PhuongXa = ?, 
+   SET HoTen = ?, SoDienThoai = ?, TinhThanh = ?,  PhuongXa = ?, 
        DiaChiChiTiet = ?
    WHERE MaKH = ?`,
       [
         safeData.fullname,
         safeData.SoDienThoai,
         safeData.TinhThanh,
-        safeData.QuanHuyen,
+
         safeData.PhuongXa,
         safeData.DiaChiChiTiet,
         id,
@@ -214,7 +214,7 @@ export const updateUser = async (req: Request, res: Response) => {
       `
       SELECT 
         u.id, u.fullname, u.username, u.email, u.avatar, u.role, u.created_at,
-        kh.HoTen, kh.SoDienThoai, kh.TinhThanh, kh.QuanHuyen, kh.PhuongXa, 
+        kh.HoTen, kh.SoDienThoai, kh.TinhThanh,  kh.PhuongXa, 
         kh.DiaChiChiTiet, kh.DiaChiDayDu
       FROM users u
       LEFT JOIN khachhang kh ON u.id = kh.MaKH

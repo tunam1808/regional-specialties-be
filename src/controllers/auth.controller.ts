@@ -50,7 +50,6 @@ export const getProfile = async (req: any, res: Response) => {
      k.HoTen,
      k.SoDienThoai,
      k.TinhThanh,
-     k.QuanHuyen,
      k.PhuongXa,
      k.DiaChiChiTiet AS DiaChi,
      k.DiaChiDayDu,
@@ -82,8 +81,7 @@ export const updateUser = async (req: Request, res: Response) => {
   let connection: any = null;
   try {
     const userId = Number(req.params.id);
-    const { SoDienThoai, DiaChiChiTiet, TinhThanh, QuanHuyen, PhuongXa } =
-      req.body;
+    const { SoDienThoai, DiaChiChiTiet, TinhThanh, PhuongXa } = req.body;
 
     // Kiểm tra user tồn tại
     const [userRows] = await db.query(
@@ -110,7 +108,7 @@ export const updateUser = async (req: Request, res: Response) => {
       // ✅ Nếu chưa có → thêm mới
       await connection.query(
         `INSERT INTO khachhang 
-        (MaKH, HoTen, SoDienThoai, user_id, NgayDangKy, TinhThanh, QuanHuyen, PhuongXa, DiaChiChiTiet)
+        (MaKH, HoTen, SoDienThoai, user_id, NgayDangKy, TinhThanh, PhuongXa, DiaChiChiTiet)
         VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, ?)`,
         [
           userId,
@@ -118,7 +116,6 @@ export const updateUser = async (req: Request, res: Response) => {
           SoDienThoai,
           userId,
           TinhThanh,
-          QuanHuyen,
           PhuongXa,
           DiaChiChiTiet,
         ]
@@ -129,11 +126,11 @@ export const updateUser = async (req: Request, res: Response) => {
         `UPDATE khachhang 
          SET SoDienThoai = ?, 
              TinhThanh = ?, 
-             QuanHuyen = ?, 
+            
              PhuongXa = ?, 
              DiaChiChiTiet = ?
          WHERE user_id = ?`,
-        [SoDienThoai, TinhThanh, QuanHuyen, PhuongXa, DiaChiChiTiet, userId]
+        [SoDienThoai, TinhThanh, PhuongXa, DiaChiChiTiet, userId]
       );
     }
 
@@ -144,10 +141,10 @@ export const updateUser = async (req: Request, res: Response) => {
         user_id: userId,
         SoDienThoai,
         TinhThanh,
-        QuanHuyen,
+
         PhuongXa,
         DiaChiChiTiet,
-        DiaChiDayDu: `${DiaChiChiTiet}, ${PhuongXa}, ${QuanHuyen}, ${TinhThanh}`,
+        DiaChiDayDu: `${DiaChiChiTiet}, ${PhuongXa}, ${TinhThanh}`,
       },
     });
   } catch (error: any) {
