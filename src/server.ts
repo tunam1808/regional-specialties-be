@@ -54,6 +54,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+app.options("*", cors());
 
 // Middleware log chỉ API, bỏ qua static files
 app.use((req, res, next) => {
