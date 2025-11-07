@@ -54,7 +54,6 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-app.options("*", cors());
 
 // Middleware log chỉ API, bỏ qua static files
 app.use((req, res, next) => {
@@ -99,7 +98,7 @@ app.use("/api/order-detail", orderDetailRoutes);
 app.use(
   "/api/admin",
   (req, res, next) => {
-    console.log("🔥 Vào được /api/admin:", req.method, req.originalUrl);
+    console.log("Vào được /api/admin:", req.method, req.originalUrl);
     next();
   },
   adminRoutes

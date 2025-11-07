@@ -17,7 +17,7 @@ export const authMiddleware = (
 ) => {
   try {
     const authHeader = req.headers["authorization"];
-    console.log("👉 Auth header FE gửi lên:", authHeader);
+    console.log("Auth header FE gửi lên:", authHeader);
 
     if (!authHeader) {
       return res.status(401).json({ message: "Thiếu Authorization header" });
