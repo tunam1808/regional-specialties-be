@@ -59,7 +59,7 @@ export const OrderController = {
 
       const [cartItems]: any = await connection.query(
         `SELECT ctdh.*, sp.SoLuongTon 
-         FROM ChiTietDonHang ctdh
+         FROM chitietdonhang ctdh
          JOIN sanpham sp ON ctdh.MaSP = sp.MaSP
          WHERE ctdh.MaDonHang = ? FOR UPDATE`,
         [tempOrderId]
@@ -118,7 +118,7 @@ export const OrderController = {
       );
 
       await connection.query(
-        `UPDATE ChiTietDonHang SET MaDonHang = ? WHERE MaDonHang = ?`,
+        `UPDATE chitietdonhang SET MaDonHang = ? WHERE MaDonHang = ?`,
         [MaDonHang, tempOrderId]
       );
 
@@ -199,7 +199,7 @@ export const OrderController = {
       const tempOrderId = `CART_${user_id}`;
       const [rows]: any = await db.query(
         `SELECT ctdh.*, sp.TenSP, sp.HinhAnh, (ctdh.SoLuong * ctdh.GiaBanTaiThoiDiem) AS ThanhTien
-         FROM ChiTietDonHang ctdh
+         FROM chitietdonhang ctdh
          JOIN sanpham sp ON ctdh.MaSP = sp.MaSP
          WHERE ctdh.MaDonHang = ?`,
         [tempOrderId]
@@ -220,7 +220,7 @@ export const OrderController = {
 
       const tempOrderId = `CART_${user_id}`;
       const [result]: any = await db.query(
-        `DELETE FROM ChiTietDonHang WHERE MaDonHang = ? AND MaSP = ?`,
+        `DELETE FROM chitietdonhang WHERE MaDonHang = ? AND MaSP = ?`,
         [tempOrderId, MaSP]
       );
 

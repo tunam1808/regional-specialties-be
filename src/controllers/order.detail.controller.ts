@@ -57,7 +57,7 @@ export const OrderDetailController = {
 
       // THÊM THẲNG VÀO ChiTietDonHang – KHÔNG TẠO DonHang
       const sql = `
-      INSERT INTO ChiTietDonHang 
+      INSERT INTO chitietdonhang 
         (MaDonHang, MaSP, SoLuong, GiaBanTaiThoiDiem, GhiChu)
       VALUES (?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE 
@@ -114,7 +114,7 @@ export const OrderDetailController = {
           ctdh.GiaBanTaiThoiDiem,
           (ctdh.SoLuong * ctdh.GiaBanTaiThoiDiem) AS ThanhTien,
           ctdh.GhiChu
-        FROM ChiTietDonHang ctdh
+        FROM chitietdonhang ctdh
         JOIN sanpham sp ON ctdh.MaSP = sp.MaSP
         WHERE ctdh.MaDonHang = ? 
         FOR UPDATE
@@ -159,7 +159,7 @@ export const OrderDetailController = {
       const tempOrderId = `CART_${user_id}`;
 
       const [result]: any = await connection.query(
-        `DELETE FROM ChiTietDonHang WHERE MaDonHang = ? AND MaSP = ?`,
+        `DELETE FROM chitietdonhang WHERE MaDonHang = ? AND MaSP = ?`,
         [tempOrderId, MaSP]
       );
 
