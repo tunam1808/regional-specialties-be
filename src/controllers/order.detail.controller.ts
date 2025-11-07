@@ -41,7 +41,7 @@ export const OrderDetailController = {
 
       // Kiểm tra tồn kho
       const [stock]: any = await connection.query(
-        `SELECT SoLuongTon FROM SanPham WHERE MaSP = ? FOR UPDATE`,
+        `SELECT SoLuongTon FROM sanpham WHERE MaSP = ? FOR UPDATE`,
         [MaSP]
       );
       if (!stock.length || stock[0].SoLuongTon < SoLuong) {
@@ -115,7 +115,7 @@ export const OrderDetailController = {
           (ctdh.SoLuong * ctdh.GiaBanTaiThoiDiem) AS ThanhTien,
           ctdh.GhiChu
         FROM ChiTietDonHang ctdh
-        JOIN SanPham sp ON ctdh.MaSP = sp.MaSP
+        JOIN sanpham sp ON ctdh.MaSP = sp.MaSP
         WHERE ctdh.MaDonHang = ? 
         FOR UPDATE
       `;
