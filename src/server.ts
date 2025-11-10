@@ -11,6 +11,7 @@ import orderRoutes from "./routes/order.router";
 import orderDetailRoutes from "./routes/order.detail.router";
 import uploadImgproductRouter from "./routes/upload.imgproduct.router";
 import { uploadAvatarRouter } from "./routes/upload.avatar.router";
+import paypalRoutes from "./routes/paypal.router";
 
 import path from "path";
 import fs from "fs"; // Thêm fs để kiểm tra/thêm thư mục
@@ -24,36 +25,36 @@ const PORT = process.env.PORT || 4000;
 app.use(express.json());
 
 // Cấu hình CORS cho các frontend port khác nhau
-// app.use(
-//   cors({
-//     origin: (origin, callback) => {
-//       const allowedOrigins = [
-//         "http://localhost:5003",
-//         "http://localhost:5002",
-//         "http://localhost:5000",
-//         "http://localhost:5001",
-//         "https://regional-specialties-fe.up.railway.app",
-//         "https://regional-specialties.vercel.app",
-//       ];
-//       if (!origin || allowedOrigins.includes(origin)) {
-//         callback(null, true);
-//       } else {
-//         callback(new Error("Not allowed by CORS"));
-//       }
-//     },
-//     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-//     credentials: true,
-//     allowedHeaders: ["Content-Type", "Authorization"],
-//   })
-// );
-
 app.use(
   cors({
-    origin: "*", // cho tất cả domain
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        "http://localhost:5003",
+        "http://localhost:5002",
+        "http://localhost:5000",
+        "http://localhost:5001",
+        "https://regional-specialties-fe.up.railway.app",
+        "https://regional-specialties.vercel.app",
+      ];
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+// app.use(
+//   cors({
+//     origin: "*", // cho tất cả domain
+//     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+//     allowedHeaders: ["Content-Type", "Authorization"],
+//   })
+// );
 
 // Middleware log chỉ API, bỏ qua static files
 app.use((req, res, next) => {
@@ -94,6 +95,15 @@ app.use("/api/location", locationRouter);
 app.use("/api/orders", orderRoutes);
 
 app.use("/api/order-detail", orderDetailRoutes);
+
+app.use(
+  "/api/paypal",
+  (req, res, next) => {
+    console.log("Vào được /api/paypal:", req.method, req.originalUrl);
+    next();
+  },
+  paypalRoutes
+);
 
 app.use(
   "/api/admin",

@@ -92,7 +92,7 @@ export const getSanPhamById = async (req: Request, res: Response) => {
   }
 };
 
-// 🟢 Tạo sản phẩm mới (admin)
+// Tạo sản phẩm mới (admin)
 export const createSanPham = async (req: AuthRequest, res: Response) => {
   try {
     const data: SanPham & { VungMien?: string; LoaiDoAn?: string } = req.body;
@@ -166,7 +166,7 @@ export const createSanPham = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// 🟢 Cập nhật sản phẩm (admin)
+// Cập nhật sản phẩm (admin)
 export const updateSanPham = async (req: Request, res: Response) => {
   const { id } = req.params;
   const data: any = req.body;
@@ -213,14 +213,14 @@ export const updateSanPham = async (req: Request, res: Response) => {
   }
 };
 
-// 🟢 Xóa sản phẩm
+// Xóa sản phẩm
 export const deleteSanPham = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     await db.query(`DELETE FROM sanpham WHERE MaSP = ?`, [id]);
     res.json({ message: "Đã xóa sản phẩm" });
   } catch (error) {
-    console.error("❌ Lỗi deleteSanPham:", error);
+    console.error("Lỗi deleteSanPham:", error);
     if ((error as any).sqlMessage)
       console.error("SQL Message:", (error as any).sqlMessage);
     res.status(500).json({ message: "Lỗi khi xóa sản phẩm" });
