@@ -12,6 +12,7 @@ import orderDetailRoutes from "./routes/order.detail.router";
 import uploadImgproductRouter from "./routes/upload.imgproduct.router";
 import { uploadAvatarRouter } from "./routes/upload.avatar.router";
 import paypalRoutes from "./routes/paypal.router";
+import statisticRouter from "./routes/statistic.router";
 
 import path from "path";
 import fs from "fs"; // Thêm fs để kiểm tra/thêm thư mục
@@ -103,6 +104,15 @@ app.use(
     next();
   },
   paypalRoutes
+);
+
+app.use(
+  "/api/statistic",
+  (req, res, next) => {
+    console.log("🔥 Vào được /api/statistic:", req.method, req.originalUrl);
+    next();
+  },
+  statisticRouter
 );
 
 app.use(

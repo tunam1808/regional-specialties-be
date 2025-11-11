@@ -2,6 +2,7 @@
 import { Response } from "express";
 import { db } from "../database";
 import { AuthRequest } from "../middlewares/authMiddleware";
+import { addPendingOrder } from "../cron/update.status.automatic";
 
 export const OrderController = {
   // Lấy danh sách đơn hàng
@@ -103,6 +104,11 @@ export const OrderController = {
         return res
           .status(404)
           .json({ message: "Không tìm thấy đơn hàng hoặc bạn không có quyền" });
+
+      // Nếu trạng thái mới là "Đã xác nhận" → thêm vào bộ nhớ để cron xử lý
+      if (TrangThai === "Đã xác nhận") {
+        addPendingOrder(id);
+      }
 
       res.json({ message: "Cập nhật trạng thái thành công" });
     } catch (err) {
