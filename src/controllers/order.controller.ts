@@ -20,16 +20,16 @@ export const OrderController = {
         // Admin → xem tất cả đơn
         query = `
           SELECT dh.*, kh.HoTen, kh.SoDienThoai
-          FROM DonHang dh
-          LEFT JOIN KhachHang kh ON dh.MaKH = kh.MaKH
+          FROM donhang dh
+          LEFT JOIN khachhang kh ON dh.MaKH = kh.MaKH
           ORDER BY dh.NgayDat DESC
         `;
       } else {
         // User thường → chỉ xem đơn của mình
         query = `
           SELECT dh.*, kh.HoTen, kh.SoDienThoai
-          FROM DonHang dh
-          LEFT JOIN KhachHang kh ON dh.MaKH = kh.MaKH
+          FROM donhang dh
+          LEFT JOIN khachhang kh ON dh.MaKH = kh.MaKH
           WHERE dh.user_id = ?
           ORDER BY dh.NgayDat DESC
         `;
@@ -58,8 +58,8 @@ export const OrderController = {
       // Nếu admin → bỏ lọc user_id
       const [order]: any = await db.query(
         role === "admin"
-          ? "SELECT * FROM DonHang WHERE MaDonHang = ?"
-          : "SELECT * FROM DonHang WHERE MaDonHang = ? AND user_id = ?",
+          ? "SELECT * FROM donhang WHERE MaDonHang = ?"
+          : "SELECT * FROM donhang WHERE MaDonHang = ? AND user_id = ?",
         role === "admin" ? [id] : [id, user_id]
       );
 
@@ -127,8 +127,8 @@ export const OrderController = {
 
       const [result]: any = await db.query(
         role === "admin"
-          ? "DELETE FROM DonHang WHERE MaDonHang = ?"
-          : "DELETE FROM DonHang WHERE MaDonHang = ? AND user_id = ?",
+          ? "DELETE FROM donhang WHERE MaDonHang = ?"
+          : "DELETE FROM donhang WHERE MaDonHang = ? AND user_id = ?",
         role === "admin" ? [id] : [id, user_id]
       );
 
@@ -192,7 +192,7 @@ export const OrderController = {
 
       // ✅ Lấy mã khách hàng
       const [khach]: any = await connection.query(
-        `SELECT MaKH FROM KhachHang WHERE user_id = ?`,
+        `SELECT MaKH FROM khachhang WHERE user_id = ?`,
         [user_id]
       );
       if (!khach.length) {
@@ -205,7 +205,7 @@ export const OrderController = {
 
       // ✅ Tạo mã đơn hàng mới
       const [lastOrder]: any = await connection.query(
-        `SELECT MaDonHang FROM DonHang ORDER BY MaDonHang DESC LIMIT 1`
+        `SELECT MaDonHang FROM donhang ORDER BY MaDonHang DESC LIMIT 1`
       );
       const lastNum = lastOrder.length
         ? parseInt(lastOrder[0].MaDonHang.replace("DH", ""), 10)
@@ -220,7 +220,7 @@ export const OrderController = {
 
       // ✅ Tạo đơn hàng mới
       await connection.query(
-        `INSERT INTO DonHang 
+        `INSERT INTO donhang 
        (MaDonHang, MaKH, user_id, TongTien, TrangThai, PhuongThucThanhToan, DiaChiGiaoHang, GhiChu, NgayDat)
        VALUES (?, ?, ?, ?, 'Chờ xác nhận', ?, ?, ?, NOW())`,
         [
@@ -365,7 +365,7 @@ export const OrderController = {
 
       // Lấy MaKH
       const [khach]: any = await connection.query(
-        `SELECT MaKH FROM KhachHang WHERE user_id = ?`,
+        `SELECT MaKH FROM khachhang WHERE user_id = ?`,
         [user_id]
       );
       if (!khach.length) {
@@ -387,7 +387,7 @@ export const OrderController = {
 
       // Tạo đơn hàng
       await connection.query(
-        `INSERT INTO DonHang 
+        `INSERT INTO donhang 
        (MaDonHang, MaKH, user_id, TongTien, TrangThai, PhuongThucThanhToan, DiaChiGiaoHang, GhiChu, NgayDat)
        VALUES (?, ?, ?, ?, 'Chờ xác nhận', ?, ?, ?, NOW())`,
         [
