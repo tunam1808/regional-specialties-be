@@ -166,24 +166,74 @@ export const createPayment = async (req: AuthRequest, res: Response) => {
 
 // ===================== PAYPAL SUCCESS =====================
 export const paypalSuccess = async (req: Request, res: Response) => {
-  const { orderId: MaDonHang } = req.query;
+  const { orderId: MaDonHang, token: paypalOrderID, PayerID } = req.query;
+
+  console.log("🔥 paypalSuccess called");
+  console.log("Query params:", req.query);
+
   if (!MaDonHang || typeof MaDonHang !== "string") {
+    console.error("❌ Thiếu hoặc sai MaDonHang");
     return res.redirect(
       `${process.env.FRONTEND_URL}/payment-fail?error=invalid_order`
     );
   }
 
+  if (!paypalOrderID || typeof paypalOrderID !== "string") {
+    console.error("❌ Thiếu token (PayPal Order ID)");
+    return res.redirect(
+      `${process.env.FRONTEND_URL}/payment-fail?error=invalid_token`
+    );
+  }
+
   try {
+    // Lấy access token PayPal
+    const accessToken = await getPayPalAccessToken();
+    console.log("✅ PayPal Access Token:", accessToken);
+
+    // Capture đơn hàng PayPal
+    const captureResp = await axios.post(
+      `${PAYPAL_API}/v2/checkout/orders/${paypalOrderID}/capture`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("✅ PayPal Capture Response:", captureResp.data);
+
+    // Kiểm tra trạng thái capture
+    const captureStatus = captureResp.data.status;
+    if (captureStatus === "COMPLETED") {
+      await db.query(
+        "UPDATE DonHang SET TrangThai = ?, PhuongThucThanhToan = ?, NgayCapNhat = NOW() WHERE MaDonHang = ?",
+        ["Đã xác nhận", "PayPal", MaDonHang]
+      );
+      console.log(`✅ Đơn hàng ${MaDonHang} đã được thanh toán`);
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/payment-success?orderId=${MaDonHang}`
+      );
+    } else {
+      console.error(`❌ Capture chưa hoàn tất. Status: ${captureStatus}`);
+      await db.query("UPDATE DonHang SET TrangThai = ? WHERE MaDonHang = ?", [
+        "Thanh toán thất bại",
+        MaDonHang,
+      ]);
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/payment-fail?orderId=${MaDonHang}`
+      );
+    }
+  } catch (err: any) {
+    console.error("❌ paypalSuccess error:", err.response?.data || err.message);
     await db.query("UPDATE DonHang SET TrangThai = ? WHERE MaDonHang = ?", [
-      "Đang xử lý",
+      "Thanh toán thất bại",
       MaDonHang,
     ]);
-    res.redirect(
-      `${process.env.FRONTEND_URL}/payment-success?orderId=${MaDonHang}`
+    return res.redirect(
+      `${process.env.FRONTEND_URL}/payment-fail?orderId=${MaDonHang}`
     );
-  } catch (err) {
-    console.error("paypalSuccess error:", err);
-    res.redirect(`${process.env.FRONTEND_URL}/payment-fail`);
   }
 };
 
@@ -209,7 +259,7 @@ export const paypalWebhook = async (req: Request, res: Response) => {
       if (MaDonHang) {
         await db.query(
           `UPDATE DonHang 
-           SET TrangThai = 'Đã thanh toán',
+           SET TrangThai = 'Đã xác nhận',
                PhuongThucThanhToan = 'PayPal',
                NgayCapNhat = NOW()
            WHERE MaDonHang = ?`,

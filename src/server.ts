@@ -1,3 +1,4 @@
+import { ProductReview } from "./model/products.review.model";
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -7,6 +8,7 @@ import adminRoutes from "./routes/admin.router";
 import uploadRoutes from "./routes/upload.router";
 import locationRouter from "./routes/address.router";
 import feedbackRoutes from "./routes/feedback.router";
+import ProductReviewRoutes from "./routes/products.review.router";
 import orderRoutes from "./routes/order.router";
 import orderDetailRoutes from "./routes/order.detail.router";
 import uploadImgproductRouter from "./routes/upload.imgproduct.router";
@@ -163,6 +165,15 @@ app.use(
     next();
   },
   feedbackRoutes
+);
+
+app.use(
+  "/api/reviews",
+  (req, res, next) => {
+    console.log("🔥 Vào được /api/reviews:", req.method, req.originalUrl);
+    next();
+  },
+  ProductReviewRoutes
 );
 
 // Cập nhật static serving
