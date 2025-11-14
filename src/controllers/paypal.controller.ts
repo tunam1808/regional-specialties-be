@@ -74,7 +74,7 @@ export const createPayment = async (req: AuthRequest, res: Response) => {
 
     // ✅ Lấy MaKH từ DB
     const [khRows]: any = await db.query(
-      "SELECT MaKH FROM KhachHang WHERE user_id = ?",
+      "SELECT MaKH FROM khachhang WHERE user_id = ?",
       [user_id]
     );
     if (!khRows.length)
