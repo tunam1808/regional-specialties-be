@@ -95,8 +95,8 @@ export const OrderController = {
 
       const [result]: any = await db.query(
         role === "admin"
-          ? "UPDATE DonHang SET TrangThai = ? WHERE MaDonHang = ?"
-          : "UPDATE DonHang SET TrangThai = ? WHERE MaDonHang = ? AND user_id = ?",
+          ? "UPDATE donhang SET TrangThai = ? WHERE MaDonHang = ?"
+          : "UPDATE donhang SET TrangThai = ? WHERE MaDonHang = ? AND user_id = ?",
         role === "admin" ? [TrangThai, id] : [TrangThai, id, user_id]
       );
 

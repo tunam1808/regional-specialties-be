@@ -102,7 +102,7 @@ export const createPayment = async (req: AuthRequest, res: Response) => {
 
     // ===================== LƯU ĐƠN HÀNG =====================
     await db.query(
-      `INSERT INTO DonHang (MaDonHang, MaKH, user_id, TongTien, TrangThai, NgayDat)
+      `INSERT INTO donhang (MaDonHang, MaKH, user_id, TongTien, TrangThai, NgayDat)
        VALUES (?, ?, ?, ?, ?, NOW())`,
       [MaDonHang, MaKH, user_id, amountNumber, "Chờ thanh toán"]
     );
@@ -208,7 +208,7 @@ export const paypalSuccess = async (req: Request, res: Response) => {
     const captureStatus = captureResp.data.status;
     if (captureStatus === "COMPLETED") {
       await db.query(
-        "UPDATE DonHang SET TrangThai = ?, PhuongThucThanhToan = ?, NgayCapNhat = NOW() WHERE MaDonHang = ?",
+        "UPDATE donhang SET TrangThai = ?, PhuongThucThanhToan = ?, NgayCapNhat = NOW() WHERE MaDonHang = ?",
         ["Đã xác nhận", "PayPal", MaDonHang]
       );
       console.log(`✅ Đơn hàng ${MaDonHang} đã được thanh toán`);
@@ -217,7 +217,7 @@ export const paypalSuccess = async (req: Request, res: Response) => {
       );
     } else {
       console.error(`❌ Capture chưa hoàn tất. Status: ${captureStatus}`);
-      await db.query("UPDATE DonHang SET TrangThai = ? WHERE MaDonHang = ?", [
+      await db.query("UPDATE donhang SET TrangThai = ? WHERE MaDonHang = ?", [
         "Thanh toán thất bại",
         MaDonHang,
       ]);
@@ -227,7 +227,7 @@ export const paypalSuccess = async (req: Request, res: Response) => {
     }
   } catch (err: any) {
     console.error("❌ paypalSuccess error:", err.response?.data || err.message);
-    await db.query("UPDATE DonHang SET TrangThai = ? WHERE MaDonHang = ?", [
+    await db.query("UPDATE donhang SET TrangThai = ? WHERE MaDonHang = ?", [
       "Thanh toán thất bại",
       MaDonHang,
     ]);
@@ -241,7 +241,7 @@ export const paypalSuccess = async (req: Request, res: Response) => {
 export const paypalCancel = async (req: Request, res: Response) => {
   const { orderId: MaDonHang } = req.query;
   if (MaDonHang && typeof MaDonHang === "string") {
-    await db.query("UPDATE DonHang SET TrangThai = ? WHERE MaDonHang = ?", [
+    await db.query("UPDATE donhang SET TrangThai = ? WHERE MaDonHang = ?", [
       "Đã hủy",
       MaDonHang,
     ]);
@@ -258,7 +258,7 @@ export const paypalWebhook = async (req: Request, res: Response) => {
       const MaDonHang = event.resource?.purchase_units?.[0]?.reference_id;
       if (MaDonHang) {
         await db.query(
-          `UPDATE DonHang 
+          `UPDATE donhang 
            SET TrangThai = 'Đã xác nhận',
                PhuongThucThanhToan = 'PayPal',
                NgayCapNhat = NOW()
@@ -274,7 +274,7 @@ export const paypalWebhook = async (req: Request, res: Response) => {
     ) {
       const MaDonHang = event.resource?.purchase_units?.[0]?.reference_id;
       if (MaDonHang) {
-        await db.query("UPDATE DonHang SET TrangThai = ? WHERE MaDonHang = ?", [
+        await db.query("UPDATE donhang SET TrangThai = ? WHERE MaDonHang = ?", [
           "Thanh toán thất bại",
           MaDonHang,
         ]);
@@ -301,7 +301,7 @@ export const checkOrderStatus = async (req: AuthRequest, res: Response) => {
     }
 
     const [rows]: any = await db.query(
-      "SELECT TrangThai, PhuongThucThanhToan, NgayCapNhat FROM DonHang WHERE MaDonHang = ? AND user_id = ?",
+      "SELECT TrangThai, PhuongThucThanhToan, NgayCapNhat FROM donhang WHERE MaDonHang = ? AND user_id = ?",
       [MaDonHang, user_id]
     );
 

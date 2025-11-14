@@ -59,7 +59,7 @@ export const StatisticController = {
           DATE_FORMAT(NgayDat, ?) AS label,
           COALESCE(SUM(TongTien), 0) AS TongDoanhThu,
           COUNT(MaDonHang) AS SoDon
-        FROM DonHang
+        FROM donhang
         ${whereClause}
         GROUP BY ${groupBy}
         ORDER BY MIN(NgayDat) ASC
