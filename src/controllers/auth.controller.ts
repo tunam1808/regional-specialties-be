@@ -53,6 +53,8 @@ export const getProfile = async (req: any, res: Response) => {
      k.PhuongXa,
      k.DiaChiChiTiet AS DiaChi,
      k.DiaChiDayDu,
+     k.Latitude,
+     k.Longitude,
      k.NgayDangKy
    FROM users u
    LEFT JOIN khachhang k ON u.id = k.user_id 

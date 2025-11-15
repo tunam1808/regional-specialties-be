@@ -15,6 +15,7 @@ import uploadImgproductRouter from "./routes/upload.imgproduct.router";
 import { uploadAvatarRouter } from "./routes/upload.avatar.router";
 import paypalRoutes from "./routes/paypal.router";
 import statisticRouter from "./routes/statistic.router";
+import emailRoutes from "./routes/email.router";
 
 import path from "path";
 import fs from "fs"; // Thêm fs để kiểm tra/thêm thư mục
@@ -98,6 +99,8 @@ app.use("/api/location", locationRouter);
 app.use("/api/orders", orderRoutes);
 
 app.use("/api/order-detail", orderDetailRoutes);
+
+app.use("/api", emailRoutes);
 
 app.use(
   "/api/paypal",
