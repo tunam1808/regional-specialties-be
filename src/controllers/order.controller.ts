@@ -17,7 +17,6 @@ export const OrderController = {
       let params: any[] = [];
 
       if (role === "admin") {
-        // Admin → xem tất cả đơn
         query = `
           SELECT dh.*, kh.HoTen, kh.SoDienThoai
           FROM donhang dh
@@ -25,7 +24,6 @@ export const OrderController = {
           ORDER BY dh.NgayDat DESC
         `;
       } else {
-        // User thường → chỉ xem đơn của mình
         query = `
           SELECT dh.*, kh.HoTen, kh.SoDienThoai
           FROM donhang dh
@@ -39,7 +37,7 @@ export const OrderController = {
       const [rows]: any = await db.query(query, params);
       res.json(rows);
     } catch (err) {
-      console.error("🔥 Lỗi khi lấy danh sách đơn hàng:", err);
+      console.error("Lỗi khi lấy danh sách đơn hàng:", err);
       res
         .status(500)
         .json({ message: "Lỗi khi lấy danh sách đơn hàng", error: err });
@@ -55,7 +53,6 @@ export const OrderController = {
 
       if (!user_id) return res.status(401).json({ message: "Chưa đăng nhập" });
 
-      // Nếu admin → bỏ lọc user_id
       const [order]: any = await db.query(
         role === "admin"
           ? "SELECT * FROM donhang WHERE MaDonHang = ?"
@@ -66,7 +63,6 @@ export const OrderController = {
       if (!order.length)
         return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
 
-      // Lấy chi tiết sản phẩm
       const [details]: any = await db.query(
         `SELECT ctdh.*, sp.TenSP, sp.HinhAnh
          FROM chitietdonhang ctdh
@@ -105,7 +101,6 @@ export const OrderController = {
           .status(404)
           .json({ message: "Không tìm thấy đơn hàng hoặc bạn không có quyền" });
 
-      // Nếu trạng thái mới là "Đã xác nhận" → thêm vào bộ nhớ để cron xử lý
       if (TrangThai === "Đã xác nhận") {
         addPendingOrder(id);
       }
@@ -143,7 +138,7 @@ export const OrderController = {
     }
   },
 
-  // Thanh toán giỏ hàng: tạo đơn hàng thực và lưu đơn hàng
+  // Thanh toán giỏ hàng
   async checkout(req: AuthRequest, res: Response) {
     const connection = await db.getConnection();
     await connection.beginTransaction();
@@ -153,8 +148,14 @@ export const OrderController = {
       if (!user_id)
         return res.status(401).json({ message: "Vui lòng đăng nhập" });
 
-      const { PhuongThucThanhToan, DiaChiGiaoHang, GhiChu, SanPhamDaChon } =
-        req.body;
+      const {
+        PhuongThucThanhToan,
+        DiaChiGiaoHang,
+        GhiChu,
+        SanPhamDaChon,
+        KhoangCach,
+        PhiShip = 0,
+      } = req.body;
 
       if (!PhuongThucThanhToan || !DiaChiGiaoHang)
         return res.status(400).json({ message: "Thiếu thông tin thanh toán" });
@@ -166,12 +167,11 @@ export const OrderController = {
 
       const tempOrderId = `CART_${user_id}`;
 
-      // Lấy sản phẩm trong giỏ + khóa lại
       const [cartItems]: any = await connection.query(
         `SELECT ctdh.*, sp.SoLuongTon, sp.TenSP 
-       FROM chitietdonhang ctdh
-       JOIN sanpham sp ON ctdh.MaSP = sp.MaSP
-       WHERE ctdh.MaDonHang = ? AND ctdh.MaSP IN (?) FOR UPDATE`,
+         FROM chitietdonhang ctdh
+         JOIN sanpham sp ON ctdh.MaSP = sp.MaSP
+         WHERE ctdh.MaDonHang = ? AND ctdh.MaSP IN (?) FOR UPDATE`,
         [tempOrderId, SanPhamDaChon]
       );
 
@@ -180,7 +180,6 @@ export const OrderController = {
           .status(400)
           .json({ message: "Không tìm thấy sản phẩm trong giỏ" });
 
-      // ✅ Kiểm tra tồn kho
       for (const item of cartItems) {
         if (item.SoLuongTon < item.SoLuong) {
           await connection.rollback();
@@ -190,7 +189,6 @@ export const OrderController = {
         }
       }
 
-      // ✅ Lấy mã khách hàng
       const [khach]: any = await connection.query(
         `SELECT MaKH FROM khachhang WHERE user_id = ?`,
         [user_id]
@@ -203,7 +201,6 @@ export const OrderController = {
       }
       const MaKH = khach[0].MaKH;
 
-      // ✅ Tạo mã đơn hàng mới
       const [lastOrder]: any = await connection.query(
         `SELECT MaDonHang FROM donhang ORDER BY MaDonHang DESC LIMIT 1`
       );
@@ -212,17 +209,16 @@ export const OrderController = {
         : 0;
       const MaDonHang = `DH${String(lastNum + 1).padStart(4, "0")}`;
 
-      // ✅ Tính tổng tiền chỉ của sản phẩm được chọn
-      const TongTien = cartItems.reduce(
+      const TongTienSanPham = cartItems.reduce(
         (sum: number, item: any) => sum + item.SoLuong * item.GiaBanTaiThoiDiem,
         0
       );
+      const TongTien = TongTienSanPham + Number(PhiShip);
 
-      // ✅ Tạo đơn hàng mới
       await connection.query(
         `INSERT INTO donhang 
-       (MaDonHang, MaKH, user_id, TongTien, TrangThai, PhuongThucThanhToan, DiaChiGiaoHang, GhiChu, NgayDat)
-       VALUES (?, ?, ?, ?, 'Chờ xác nhận', ?, ?, ?, NOW())`,
+         (MaDonHang, MaKH, user_id, TongTien, TrangThai, PhuongThucThanhToan, DiaChiGiaoHang, GhiChu, NgayDat, KhoangCach, PhiShip)
+         VALUES (?, ?, ?, ?, 'Chờ xác nhận', ?, ?, ?, NOW(), ?, ?)`,
         [
           MaDonHang,
           MaKH,
@@ -231,23 +227,23 @@ export const OrderController = {
           PhuongThucThanhToan,
           DiaChiGiaoHang,
           GhiChu || null,
+          KhoangCach || null,
+          PhiShip,
         ]
       );
 
-      // ✅ Chuyển chỉ những sản phẩm được chọn sang đơn hàng mới
       await connection.query(
         `UPDATE chitietdonhang 
-       SET MaDonHang = ? 
-       WHERE MaDonHang = ? AND MaSP IN (?)`,
+         SET MaDonHang = ? 
+         WHERE MaDonHang = ? AND MaSP IN (?)`,
         [MaDonHang, tempOrderId, SanPhamDaChon]
       );
 
-      // ✅ Giảm tồn kho và cập nhật đã bán
       for (const item of cartItems) {
         await connection.query(
           `UPDATE sanpham 
-     SET SoLuongTon = SoLuongTon - ?, DaBan = DaBan + ? 
-     WHERE MaSP = ?`,
+           SET SoLuongTon = SoLuongTon - ?, DaBan = DaBan + ? 
+           WHERE MaSP = ?`,
           [item.SoLuong, item.SoLuong, item.MaSP]
         );
       }
@@ -262,8 +258,6 @@ export const OrderController = {
       connection.release();
     }
   },
-
-  // Xóa đơn hàng – CHỈ CHỦ ĐƠN
 
   // Lấy giỏ hàng
   async getCart(req: AuthRequest, res: Response) {
@@ -308,7 +302,7 @@ export const OrderController = {
     }
   },
 
-  // THANH TOÁN TRỰC TIẾP – DÀNH RIÊNG CHO "MUA NGAY"
+  // THANH TOÁN TRỰC TIẾP – MUA NGAY
   async checkoutDirectly(req: AuthRequest, res: Response) {
     const connection = await db.getConnection();
     await connection.beginTransaction();
@@ -318,7 +312,14 @@ export const OrderController = {
       if (!user_id)
         return res.status(401).json({ message: "Vui lòng đăng nhập" });
 
-      const { PhuongThucThanhToan, DiaChiGiaoHang, GhiChu, items } = req.body;
+      const {
+        PhuongThucThanhToan,
+        DiaChiGiaoHang,
+        GhiChu,
+        items,
+        KhoangCach,
+        PhiShip = 0,
+      } = req.body;
 
       if (!PhuongThucThanhToan || !DiaChiGiaoHang)
         return res.status(400).json({ message: "Thiếu thông tin thanh toán" });
@@ -328,14 +329,13 @@ export const OrderController = {
           .status(400)
           .json({ message: "Không có sản phẩm nào để thanh toán" });
 
-      // Kiểm tra tồn kho + lấy tên sản phẩm
       const placeholders = items.map(() => "?").join(",");
       const maSPList = items.map((i: any) => i.MaSP);
 
       const [products]: any = await connection.query(
         `SELECT MaSP, TenSP, SoLuongTon 
-       FROM sanpham 
-       WHERE MaSP IN (${placeholders}) FOR UPDATE`,
+         FROM sanpham 
+         WHERE MaSP IN (${placeholders}) FOR UPDATE`,
         maSPList
       );
 
@@ -346,24 +346,18 @@ export const OrderController = {
           .json({ message: "Một số sản phẩm không tồn tại!" });
       }
 
-      // Kiểm tra tồn kho
       for (const item of items) {
         const product = products.find((p: any) => p.MaSP === item.MaSP);
-        if (!product) {
-          await connection.rollback();
-          return res
-            .status(400)
-            .json({ message: `Sản phẩm ${item.MaSP} không tồn tại` });
-        }
-        if (product.SoLuongTon < item.SoLuong) {
+        if (!product || product.SoLuongTon < item.SoLuong) {
           await connection.rollback();
           return res.status(400).json({
-            message: `Sản phẩm "${product.TenSP}" chỉ còn ${product.SoLuongTon} cái`,
+            message: `Sản phẩm "${product?.TenSP || item.MaSP}" chỉ còn ${
+              product?.SoLuongTon || 0
+            } cái`,
           });
         }
       }
 
-      // Lấy MaKH
       const [khach]: any = await connection.query(
         `SELECT MaKH FROM khachhang WHERE user_id = ?`,
         [user_id]
@@ -376,20 +370,18 @@ export const OrderController = {
       }
       const MaKH = khach[0].MaKH;
 
-      // ✅ Tạo mã đơn hàng duy nhất
-      const MaDonHang = "DH" + Date.now(); // luôn khác nhau
+      const MaDonHang = "DH" + Date.now();
 
-      // Tính tổng tiền
-      const TongTien = items.reduce(
+      const TongTienSanPham = items.reduce(
         (sum: number, item: any) => sum + item.SoLuong * item.GiaBanTaiThoiDiem,
         0
       );
+      const TongTien = TongTienSanPham + Number(PhiShip);
 
-      // Tạo đơn hàng
       await connection.query(
         `INSERT INTO donhang 
-       (MaDonHang, MaKH, user_id, TongTien, TrangThai, PhuongThucThanhToan, DiaChiGiaoHang, GhiChu, NgayDat)
-       VALUES (?, ?, ?, ?, 'Chờ xác nhận', ?, ?, ?, NOW())`,
+         (MaDonHang, MaKH, user_id, TongTien, TrangThai, PhuongThucThanhToan, DiaChiGiaoHang, GhiChu, NgayDat, KhoangCach, PhiShip)
+         VALUES (?, ?, ?, ?, 'Chờ xác nhận', ?, ?, ?, NOW(), ?, ?)`,
         [
           MaDonHang,
           MaKH,
@@ -398,25 +390,25 @@ export const OrderController = {
           PhuongThucThanhToan,
           DiaChiGiaoHang,
           GhiChu || null,
+          KhoangCach || null,
+          PhiShip,
         ]
       );
 
-      // Thêm chi tiết đơn hàng
       for (const item of items) {
         await connection.query(
           `INSERT INTO chitietdonhang 
-         (MaDonHang, MaSP, SoLuong, GiaBanTaiThoiDiem) 
-         VALUES (?, ?, ?, ?)`,
+           (MaDonHang, MaSP, SoLuong, GiaBanTaiThoiDiem) 
+           VALUES (?, ?, ?, ?)`,
           [MaDonHang, item.MaSP, item.SoLuong, item.GiaBanTaiThoiDiem]
         );
       }
 
-      // ✅ Giảm tồn kho và cập nhật đã bán
       for (const item of items) {
         await connection.query(
           `UPDATE sanpham 
-     SET SoLuongTon = SoLuongTon - ?, DaBan = DaBan + ? 
-     WHERE MaSP = ?`,
+           SET SoLuongTon = SoLuongTon - ?, DaBan = DaBan + ? 
+           WHERE MaSP = ?`,
           [item.SoLuong, item.SoLuong, item.MaSP]
         );
       }

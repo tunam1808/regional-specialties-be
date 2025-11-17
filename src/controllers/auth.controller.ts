@@ -83,7 +83,14 @@ export const updateUser = async (req: Request, res: Response) => {
   let connection: any = null;
   try {
     const userId = Number(req.params.id);
-    const { SoDienThoai, DiaChiChiTiet, TinhThanh, PhuongXa } = req.body;
+    const {
+      SoDienThoai,
+      DiaChiChiTiet,
+      TinhThanh,
+      PhuongXa,
+      Latitude, // ← THÊM
+      Longitude, // ← THÊM
+    } = req.body;
 
     // Kiểm tra user tồn tại
     const [userRows] = await db.query(
@@ -107,46 +114,84 @@ export const updateUser = async (req: Request, res: Response) => {
     await connection.beginTransaction();
 
     if ((khRows as any[]).length === 0) {
-      // ✅ Nếu chưa có → thêm mới
+      // Nếu chưa có → thêm mới (với tọa độ nếu có)
       await connection.query(
         `INSERT INTO khachhang 
-        (MaKH, HoTen, SoDienThoai, user_id, NgayDangKy, TinhThanh, PhuongXa, DiaChiChiTiet)
-        VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, ?)`,
+        (MaKH, HoTen, SoDienThoai, user_id, NgayDangKy, TinhThanh, PhuongXa, DiaChiChiTiet, Latitude, Longitude)
+        VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)`,
         [
           userId,
           fullname,
-          SoDienThoai,
+          SoDienThoai || null,
           userId,
-          TinhThanh,
-          PhuongXa,
-          DiaChiChiTiet,
+          TinhThanh || null,
+          PhuongXa || null,
+          DiaChiChiTiet || null,
+          Latitude || null,
+          Longitude || null,
         ]
       );
     } else {
-      // ✅ Nếu đã có → cập nhật thông tin
+      // Nếu đã có → cập nhật (chỉ cập nhật những field có gửi lên)
+      const updates: string[] = [];
+      const values: any[] = [];
+
+      if (SoDienThoai !== undefined) {
+        updates.push("SoDienThoai = ?");
+        values.push(SoDienThoai);
+      }
+      if (TinhThanh !== undefined) {
+        updates.push("TinhThanh = ?");
+        values.push(TinhThanh);
+      }
+      if (PhuongXa !== undefined) {
+        updates.push("PhuongXa = ?");
+        values.push(PhuongXa);
+      }
+      if (DiaChiChiTiet !== undefined) {
+        updates.push("DiaChiChiTiet = ?");
+        values.push(DiaChiChiTiet);
+      }
+      if (Latitude !== undefined) {
+        updates.push("Latitude = ?");
+        values.push(Latitude);
+      }
+      if (Longitude !== undefined) {
+        updates.push("Longitude = ?");
+        values.push(Longitude);
+      }
+
+      if (updates.length === 0) {
+        return res
+          .status(400)
+          .json({ message: "Không có dữ liệu để cập nhật" });
+      }
+
+      values.push(userId);
       await connection.query(
-        `UPDATE khachhang 
-         SET SoDienThoai = ?, 
-             TinhThanh = ?, 
-            
-             PhuongXa = ?, 
-             DiaChiChiTiet = ?
-         WHERE user_id = ?`,
-        [SoDienThoai, TinhThanh, PhuongXa, DiaChiChiTiet, userId]
+        `UPDATE khachhang SET ${updates.join(", ")} WHERE user_id = ?`,
+        values
       );
     }
 
+    // Tính lại DiaChiDayDu
+    const diaChiDayDu = [DiaChiChiTiet, PhuongXa, TinhThanh]
+      .filter(Boolean)
+      .join(", ");
+
     await connection.commit();
+
     res.json({
       message: "Cập nhật thông tin thành công",
       data: {
         user_id: userId,
         SoDienThoai,
         TinhThanh,
-
         PhuongXa,
         DiaChiChiTiet,
-        DiaChiDayDu: `${DiaChiChiTiet}, ${PhuongXa}, ${TinhThanh}`,
+        Latitude,
+        Longitude,
+        DiaChiDayDu: diaChiDayDu,
       },
     });
   } catch (error: any) {

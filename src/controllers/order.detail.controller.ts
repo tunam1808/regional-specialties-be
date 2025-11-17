@@ -105,20 +105,21 @@ export const OrderDetailController = {
       const tempOrderId = `CART_${user_id}`;
 
       const sql = `
-        SELECT 
-          ctdh.MaCTDH,
-          ctdh.MaSP,
-          sp.TenSP,
-          sp.HinhAnh,
-          ctdh.SoLuong,
-          ctdh.GiaBanTaiThoiDiem,
-          (ctdh.SoLuong * ctdh.GiaBanTaiThoiDiem) AS ThanhTien,
-          ctdh.GhiChu
-        FROM chitietdonhang ctdh
-        JOIN sanpham sp ON ctdh.MaSP = sp.MaSP
-        WHERE ctdh.MaDonHang = ? 
-        FOR UPDATE
-      `;
+      SELECT 
+        ctdh.MaCTDH,
+        ctdh.MaSP,
+        sp.TenSP,
+        sp.HinhAnh,
+        ctdh.SoLuong,
+        ctdh.GiaBanTaiThoiDiem,
+        (ctdh.SoLuong * ctdh.GiaBanTaiThoiDiem) AS ThanhTien,
+        ctdh.GhiChu,
+        sp.LoaiDoAn  -- ← THÊM DÒNG NÀY
+      FROM chitietdonhang ctdh
+      JOIN sanpham sp ON ctdh.MaSP = sp.MaSP
+      WHERE ctdh.MaDonHang = ? 
+      FOR UPDATE
+    `;
 
       const [rows]: any = await connection.query(sql, [tempOrderId]);
 
