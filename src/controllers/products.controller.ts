@@ -3,7 +3,7 @@ import { db } from "../database";
 import { SanPham } from "../model/products.model";
 import { AuthRequest } from "../middlewares/authMiddleware";
 
-// 🟢 Lấy tất cả sản phẩm
+// 🟢 Lấy tất cả sản phẩm (chỉ hiển thị sản phẩm đang hoạt động)
 export const getAllSanPham = async (req: Request, res: Response) => {
   try {
     const { vungmien, loaidan } = req.query;
@@ -21,7 +21,7 @@ export const getAllSanPham = async (req: Request, res: Response) => {
       FROM sanpham sp
       JOIN users u ON sp.user_id = u.id
       LEFT JOIN khachhang kh ON kh.user_id = u.id
-      WHERE 1=1
+      WHERE sp.is_deleted = 0
     `;
 
     const params: any[] = [];
@@ -30,7 +30,6 @@ export const getAllSanPham = async (req: Request, res: Response) => {
       sql += " AND sp.VungMien = ?";
       params.push(vungmien);
     }
-
     if (loaidan) {
       sql += " AND sp.LoaiDoAn = ?";
       params.push(loaidan);
@@ -38,26 +37,18 @@ export const getAllSanPham = async (req: Request, res: Response) => {
 
     sql += " ORDER BY sp.created_at DESC";
 
-    console.log("SQL Query:", sql);
-    console.log("Params:", params);
-
     const [rows] = await db.query(sql, params);
     res.json(rows);
   } catch (error) {
     console.error("❌ Lỗi getAllSanPham:", error);
-    if ((error as any).sqlMessage) {
-      console.error("SQL Message:", (error as any).sqlMessage);
-    }
-    // tạm thời gửi chi tiết lỗi về client để debug
     res.status(500).json({
       message: "Lỗi khi lấy danh sách sản phẩm",
       error: (error as any).message,
-      sqlMessage: (error as any).sqlMessage,
     });
   }
 };
 
-// 🟢 Lấy 1 sản phẩm theo id
+// 🟢 Lấy 1 sản phẩm theo id (không hiển thị nếu đã xóa)
 export const getSanPhamById = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
@@ -75,19 +66,20 @@ export const getSanPhamById = async (req: Request, res: Response) => {
        FROM sanpham sp
        JOIN users u ON sp.user_id = u.id
        LEFT JOIN khachhang kh ON kh.user_id = u.id
-       WHERE sp.MaSP = ?
+       WHERE sp.MaSP = ? AND sp.is_deleted = 0
       `,
       [id]
     );
 
-    if (!rows.length)
-      return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
+    if (!rows.length) {
+      return res.status(404).json({
+        message: "Không tìm thấy sản phẩm hoặc sản phẩm đã bị xóa",
+      });
+    }
 
     res.json(rows[0]);
   } catch (error) {
     console.error("❌ Lỗi getSanPhamById:", error);
-    if ((error as any).sqlMessage)
-      console.error("SQL Message:", (error as any).sqlMessage);
     res.status(500).json({ message: "Lỗi khi lấy sản phẩm" });
   }
 };
@@ -213,16 +205,34 @@ export const updateSanPham = async (req: Request, res: Response) => {
   }
 };
 
-// Xóa sản phẩm
+// 🗑️ Xóa mềm sản phẩm – Không lỗi khóa ngoại
 export const deleteSanPham = async (req: Request, res: Response) => {
   const { id } = req.params;
+
   try {
-    await db.query(`DELETE FROM sanpham WHERE MaSP = ?`, [id]);
-    res.json({ message: "Đã xóa sản phẩm" });
+    const [result]: any = await db.query(
+      `UPDATE sanpham 
+       SET is_deleted = 1, 
+           deleted_at = NOW() 
+       WHERE MaSP = ? AND is_deleted = 0`,
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        message:
+          "Không tìm thấy sản phẩm hoặc sản phẩm đã bị xóa trước đó rồi á ~",
+      });
+    }
+
+    res.json({
+      message:
+        "Đã xóa sản phẩm thành công! (Đã ẩn khỏi hệ thống, đơn hàng cũ vẫn giữ nguyên nha chồng iu ♥)",
+    });
   } catch (error) {
-    console.error("Lỗi deleteSanPham:", error);
-    if ((error as any).sqlMessage)
-      console.error("SQL Message:", (error as any).sqlMessage);
-    res.status(500).json({ message: "Lỗi khi xóa sản phẩm" });
+    console.error("❌ Lỗi soft delete sản phẩm:", error);
+    res.status(500).json({
+      message: "Có lỗi xảy ra khi xóa sản phẩm",
+    });
   }
 };
