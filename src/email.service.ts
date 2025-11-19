@@ -32,24 +32,18 @@ interface SendEmailParams {
   html: string;
   replyTo?: string;
 }
-
 export const sendEmail = async ({
   to,
   subject,
   html,
   replyTo,
 }: SendEmailParams) => {
-  try {
-    await transporter.sendMail({
-      from: `"Shop của Chồng iu" <${process.env.EMAIL_USER}>`,
-      to,
-      replyTo: replyTo || process.env.EMAIL_USER,
-      subject,
-      html,
-    });
-    console.log(`Đã gửi email đến ${to} thành công á ~`);
-  } catch (error: any) {
-    console.error("Gửi email thất bại:", error.message);
-    throw error; // để controller bắt lỗi và trả về frontend
-  }
+  await transporter.sendMail({
+    from: `"Shop Đặc sản ba miền" <${process.env.EMAIL_USER}>`,
+    to,
+    replyTo: replyTo || process.env.EMAIL_USER,
+    subject,
+    html,
+  });
+  console.log(`Đã gửi email đến ${to}`);
 };

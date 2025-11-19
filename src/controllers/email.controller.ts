@@ -13,7 +13,12 @@ export const sendEmailController = async (req: Request, res: Response) => {
     }
 
     // Gửi email, replyTo = email người gửi form
-    await sendEmail(to, subject, message, userEmail);
+    await sendEmail({
+      to,
+      subject,
+      html: message,
+      replyTo: userEmail,
+    });
 
     return res.json({ success: true, message: "Gửi email thành công!" });
   } catch (error: any) {

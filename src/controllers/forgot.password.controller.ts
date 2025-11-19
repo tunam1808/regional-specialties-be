@@ -48,12 +48,15 @@ export const forgotPassword = async (req: Request, res: Response) => {
     );
 
     // 5. Gửi email trực tiếp mật khẩu mới
-    await sendEmail(
-      email,
-      "Mật khẩu mới của bạn",
-      `Mật khẩu mới của bạn là: ${newPassword}\nToken xác thực: ${token}\nHãy đăng nhập và đổi mật khẩu ngay!`,
-      ""
-    );
+    await sendEmail({
+      to: email,
+      subject: "Mật khẩu mới của bạn",
+      html: `Mật khẩu mới của bạn là: <strong>${newPassword.toUpperCase()}</strong><br><br>
+         Token xác thực: <code>${token}</code><br><br>
+         Hãy đăng nhập ngay và đổi mật khẩu!<br>
+         <a href="https://dacsanbamien.shop/login">Đăng nhập tại đây</a>`,
+      replyTo: email,
+    });
 
     return res.json({
       success: true,
